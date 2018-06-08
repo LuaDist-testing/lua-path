@@ -1,10 +1,10 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-path"
-version = "0.3.0-1"
+version = "0.3.0-2"
 -- LuaDist source
 source = {
-  tag = "0.3.0-1",
+  tag = "0.3.0-2",
   url = "git://github.com/LuaDist-testing/lua-path.git"
 }
 -- Original source
@@ -30,6 +30,8 @@ dependencies = {
 build = {
   type = "builtin",
   copy_directories = {
+    "doc",
+    "examples",
     "test",
   },
   modules = {
