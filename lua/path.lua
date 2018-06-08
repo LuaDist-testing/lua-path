@@ -1,3 +1,15 @@
+------------------------------------------------------------------
+--
+--  Author: Alexey Melnichuk <alexeymelnichuck@gmail.com>
+--
+--  Copyright (C) 2013-2016 Alexey Melnichuk <alexeymelnichuck@gmail.com>
+--
+--  Licensed according to the included 'LICENCE' document
+--
+--  This file is part of lua-path library.
+--
+------------------------------------------------------------------
+
 local package = require "package"
 local string  = require "string"
 local table   = require "table"
@@ -384,7 +396,7 @@ function PATH:each(...)
   return each(...)
 end
 
-local function copy_impl_batch(fs, src_dir, mask, dst_dir, opt)
+local function copy_impl_batch(self, fs, src_dir, mask, dst_dir, opt)
   if not opt then opt = {} end
 
   local overwrite = opt.overwrite
@@ -393,6 +405,7 @@ local function copy_impl_batch(fs, src_dir, mask, dst_dir, opt)
   local chlen     = #fs.DIR_SEP
   local count     = 0
 
+  local existed_dirs = {}
   local ok, err = fs.each_impl{file = src_dir .. fs.DIR_SEP .. mask,
     delay = opt.delay; recurse = opt.recurse; param = "pnm";
     skipdirs = opt.skipdirs; skipfiles = opt.skipfiles;
@@ -407,9 +420,26 @@ local function copy_impl_batch(fs, src_dir, mask, dst_dir, opt)
         if not ok then return end
       end
 
-      local ok, err
-      if mode == "directory" then ok, err = fs.mkdir(dst)
-      else ok, err = fs.copy(src, dst, not overwrite) end
+      local ok, err = true
+      if mode == "directory" then
+        if not existed_dirs[dst] then
+          if not fs.isdir(dst) then
+            ok, err = self:mkdir(dst)
+          end
+          existed_dirs[dst] = true
+        end
+      else
+        local dir = self:splitpath(dst)
+        if not existed_dirs[dir] then
+          if not fs.isdir(dst) then
+            ok, err = self:mkdir(dir)
+          end
+          existed_dirs[dir] = true
+        end
+        if ok then
+          ok, err = fs.copy(src, dst, not overwrite)
+        end
+      end
 
       if not ok and onerror then
         if not onerror(err, src, dst, opt) then -- break
@@ -476,8 +506,7 @@ function PATH:copy(from, to, opt)
 
   local src_dir, src_name = self:splitpath(from)
   if recurse or src_name:find("[*?]") then -- batch mode
-    self:mkdir(to)
-    return copy_impl_batch(fs, src_dir, src_name, to, opt)
+    return copy_impl_batch(self, fs, src_dir, src_name, to, opt)
   end
   if self.mkdir then self:mkdir(self:dirname(to)) end
   return fs.copy(from, to, not not overwrite)
@@ -506,32 +535,64 @@ PATH.getmtime = PATH.mtime
 PATH.getsize  = PATH.size
 end
 
-local function make_module()
-  local M = require "path.module"
+local function path_new(o)
+  o = o or {}
   for k, f in pairs(PATH) do
     if type(f) == 'function' then
-      M[k] = function(...) return f(PATH, ...) end
+      o[k] = function(...)
+        if o == ... then return f(...) end
+        return f(o, ...)
+      end
     else 
-      M[k] = f
+      o[k] = f
     end
   end
-  return M
+  return o
 end
 
-local M = make_module()
+local function lock_table(t)
+  return setmetatable(t,{
+    __newindex = function()
+      error("Can not change path library", 2)
+    end;
+    __metatable = "lua-path object";
+  })
+end
+
+local M = path_new(require "path.module")
+
+local path_cache = setmetatable({}, {__mode='v'})
 
 function M.new(DIR_SEP)
-  local o = setmetatable({}, {__index = PATH})
+  local is_win, sep
+
   if type(DIR_SEP) == 'string' then
-    o.DIR_SEP = DIR_SEP
-    o.IS_WINDOWS = (DIR_SEP == '\\')
-  else
+    sep = DIR_SEP
+    is_win = (DIR_SEP == '\\')
+  elseif DIR_SEP ~= nil then
     assert(type(DIR_SEP) == 'boolean')
-    o.IS_WINDOWS = DIR_SEP
-    o.DIR_SEP = o.IS_WINDOWS and '\\' or '/'
+    is_win = DIR_SEP
+    sep = is_win and '\\' or '/'
+  else
+    sep = M.DIR_SEP
+    is_win = M.IS_WINDOWS
+  end
+
+  if M.DIR_SEP == sep then
+    assert(M.IS_WINDOWS == is_win)
+    return M
+  end
+
+  local o = path_cache[sep]
+
+  if not o then
+    o = path_new()
+    o.DIR_SEP = sep
+    o.IS_WINDOWS = is_win
+    path_cache[sep] = lock_table(o)
   end
 
   return o
 end
 
-return M
+return lock_table(M)

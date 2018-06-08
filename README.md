@@ -1,5 +1,6 @@
 [![Licence](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](LICENCE.txt)
 [![Build Status](https://travis-ci.org/moteus/lua-path.png?branch=master)](https://travis-ci.org/moteus/lua-path)
+[![Build Status](https://ci.appveyor.com/api/projects/status/okrhcb519rldjhn4?svg=true)](https://ci.appveyor.com/project/moteus/lua-path)
 [![Coverage Status](https://coveralls.io/repos/moteus/lua-path/badge.png)](https://coveralls.io/r/moteus/lua-path)
 
 ###Documentation
@@ -18,10 +19,10 @@ print(PATH.currentdir()) -- C:\lua\5.1
 
 -- but we can use specific system path notation
 local ftp_path = PATH.new('/')
-print(ftp_path:join("/root", "some", "dir")) -- /root/some/dir
+print(ftp_path.join("/root", "some", "dir")) -- /root/some/dir
 
 -- All functions specific to system will fail
-assert(not pcall( ftp_path.currentdir, ftp_path ) )
+assert(not pcall( ftp_path.currentdir ) )
 ```
 
 ```lua

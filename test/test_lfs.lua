@@ -10,7 +10,7 @@ end
 
 local function test(name, lfs)
 
-local tmp = "/tmp"
+local nonexists = "/8f00e678b1984de4a49d7650e1534327"
 local sep = string.match (package.config, "[^\n]+")
 local upper = ".."
 
@@ -51,6 +51,7 @@ io.flush()
 -- Changing creating and removing directories
 local tmpdir = current..sep.."lfs_tmp_dir"
 local tmpfile = tmpdir..sep.."tmp_file"
+
 -- Test for existence of a previous lfs_tmp_dir
 -- that may have resulted from an interrupted test execution and remove it
 if lfs.chdir (tmpdir) then
@@ -78,8 +79,8 @@ io.flush()
 local testdate = os.time({ year = 2007, day = 10, month = 2, hour=0})
 assert (lfs.touch (tmpfile, testdate))
 local new_att = assert (lfs.attributes (tmpfile))
-assert (new_att.access == testdate, "could not set access time")
-assert (new_att.modification == testdate, "could not set modification time")
+assert (math.abs(new_att.access - testdate) <= 1, "could not set access time")
+assert (math.abs(new_att.modification - testdate) <= 1, "could not set modification time")
 
 io.write(".")
 io.flush()
@@ -90,8 +91,8 @@ local testdate2 = os.time({ year = 2007, day = 11, month = 2, hour=0})
 
 assert (lfs.touch (tmpfile, testdate2, testdate1))
 local new_att = assert (lfs.attributes (tmpfile))
-assert (new_att.access == testdate2, "could not set access time")
-assert (new_att.modification == testdate1, "could not set modification time")
+assert (math.abs(new_att.access - testdate2) <= 1, "could not set access time")
+assert (math.abs(new_att.modification - testdate1) <= 1, "could not set modification time")
 
 io.write(".")
 io.flush()
@@ -125,8 +126,8 @@ io.flush()
 -- Restore access time to current value
 assert (lfs.touch (tmpfile, attrib.access, attrib.modification))
 new_att = assert (lfs.attributes (tmpfile))
-assert (new_att.access == attrib.access)
-assert (new_att.modification == attrib.modification)
+assert (math.abs(new_att.access - attrib.access) <= 1)
+assert (math.abs(new_att.modification - attrib.modification) <= 1)
 
 io.write(".")
 io.flush()
@@ -146,10 +147,23 @@ assert (type(lfs.attributes (upper)) == "table", "couldn't get attributes of upp
 io.write(".")
 io.flush()
 
--- Stressing directory iterator
+-- Stressing directory iterator (nonexists)
+if IS_WINDOWS then
+  count = 0
+  for i = 1, 4000 do
+          for file in lfs.dir (nonexists) do
+                  count = count + 1
+          end
+  end
+
+  io.write(".")
+  io.flush()
+end
+
+-- Stressing directory iterator (exists)
 count = 0
 for i = 1, 4000 do
-        for file in lfs.dir (tmp) do
+        for file in lfs.dir (current) do
                 count = count + 1
         end
 end
@@ -157,10 +171,27 @@ end
 io.write(".")
 io.flush()
 
--- Stressing directory iterator, explicit version
+-- Stressing directory iterator, explicit version (nonexists)
+if IS_WINDOWS then
+  count = 0
+  for i = 1, 4000 do
+    local iter, dir = lfs.dir(nonexists)
+    local file = dir:next()
+    while file do
+      count = count + 1
+      file = dir:next()
+    end
+    assert(not pcall(dir.next, dir))
+  end
+
+  io.write(".")
+  io.flush()
+end
+
+-- Stressing directory iterator, explicit version (exists)
 count = 0
 for i = 1, 4000 do
-  local iter, dir = lfs.dir(tmp)
+  local iter, dir = lfs.dir(current)
   local file = dir:next()
   while file do
     count = count + 1
@@ -172,8 +203,18 @@ end
 io.write(".")
 io.flush()
 
+if IS_WINDOWS then
+  -- directory explicit close
+  local iter, dir = lfs.dir(nonexists)
+  dir:close()
+  assert(not pcall(dir.next, dir))
+
+  io.write(".")
+  io.flush()
+end
+
 -- directory explicit close
-local iter, dir = lfs.dir(tmp)
+local iter, dir = lfs.dir(current)
 dir:close()
 assert(not pcall(dir.next, dir))
 print"Ok!"

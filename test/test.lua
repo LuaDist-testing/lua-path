@@ -196,6 +196,13 @@ function test_join()
   assert_equal("hello\\",                     path_win:join("hello", ""))
 end
 
+function test_dot_notation()
+  assert_equal("hello\\world",                path_win.join("hello", "", "world"))
+  assert_equal("hello/world",                 path_unx.join("hello", "", "world"))
+  assert_equal('/',                           path_unx.ensure_dir_end('/'))
+  assert_equal('host',                        path_win.root('\\\\host\\a\\b\\c'))
+end
+
 end
 
 local _ENV = TEST_CASE('PATH system error') if true then
@@ -325,7 +332,9 @@ function test_attr()
   end, {skipdirs=true, recurse=true})
 
   path.each("./1/*", "ft", function(f,mt)
-    assert_equal(ts, mt)
+    if math.abs(ts - mt) > 1 then
+      assert_equal(ts, mt)
+    end
   end, {skipdirs=true, recurse=true})
 end
 
@@ -538,9 +547,24 @@ function teardown()
   path.remove(path.join(cwd, '1', '2', '3'))
   path.remove(path.join(cwd, '1', '2'))
   path.remove(path.join(cwd, '1'))
+
+  path.remove(path.join(cwd, '2', 'a1.txt'))
+  path.remove(path.join(cwd, '2', 'a2.txt'))
+  path.remove(path.join(cwd, '2', 'b1.txt'))
+  path.remove(path.join(cwd, '2', 'b2.txt'))
+  path.remove(path.join(cwd, '2', '2', 'a1.txt'))
+  path.remove(path.join(cwd, '2', '2', 'a2.txt'))
+  path.remove(path.join(cwd, '2', '2', 'b1.txt'))
+  path.remove(path.join(cwd, '2', '2', 'b2.txt'))
+  path.remove(path.join(cwd, '2', '2', '3', 'a1.txt'))
+  path.remove(path.join(cwd, '2', '2', '3', 'a2.txt'))
+  path.remove(path.join(cwd, '2', '2', '3', 'b1.txt'))
+  path.remove(path.join(cwd, '2', '2', '3', 'b2.txt'))
+
+  path.remove(path.join(cwd, '2', '2', '3'))
+  path.remove(path.join(cwd, '2', '2' ))
   path.remove(path.join(cwd, '2', 'to'))
   path.remove(path.join(cwd, '2'))
-
 end
 
 function setup()
@@ -630,6 +654,47 @@ function test_copy_batch()
     return true
   end)
   assert_nil(fname)
+end
+
+function test_copy_batch_recurse()
+  path.mkdir(path.join(cwd, '1'))
+  path.mkdir(path.join(cwd, '1', '2'))
+  path.mkdir(path.join(cwd, '1', '2', '3'))
+
+  mkfile(path.join(cwd, '1', 'a1.txt'), '12345')
+  mkfile(path.join(cwd, '1', 'a2.txt'), '54321')
+  mkfile(path.join(cwd, '1', 'b1.txt'), '12345')
+  mkfile(path.join(cwd, '1', 'b2.txt'), '54321')
+
+  mkfile(path.join(cwd, '1', '2', '3', 'a1.txt'), '12345')
+  mkfile(path.join(cwd, '1', '2', '3', 'a2.txt'), '54321')
+  mkfile(path.join(cwd, '1', '2', '3', 'b1.txt'), '12345')
+  mkfile(path.join(cwd, '1', '2', '3', 'b2.txt'), '54321')
+
+  assert(path.copy(
+    path.join(cwd, '1', 'a*.txt'),
+    path.join(cwd, '2'),
+    {recurse = true}
+  ))
+
+  assert_equal("12345", read_file(path.join(cwd, '2', 'a1.txt')))
+  assert_equal("54321", read_file(path.join(cwd, '2', 'a2.txt')))
+  assert_equal("12345", read_file(path.join(cwd, '2', '2', '3', 'a1.txt')))
+  assert_equal("54321", read_file(path.join(cwd, '2', '2', '3', 'a2.txt')))
+end
+
+function test_copy_batch_dir()
+  path.mkdir(path.join(cwd, '1'))
+  path.mkdir(path.join(cwd, '1', '2'))
+  path.mkdir(path.join(cwd, '1', '2', '3'))
+
+  assert(path.copy(
+    path.join(cwd, '1', '3*'),
+    path.join(cwd, '2'),
+    {recurse = true,skipdirs=false}
+  ))
+
+  assert_equal(path.join(cwd, '2', '2', '3'), path.isdir(path.join(cwd, '2', '2', '3')))
 end
 
 function test_copy_accept()

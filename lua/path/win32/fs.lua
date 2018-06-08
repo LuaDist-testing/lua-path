@@ -1,3 +1,15 @@
+------------------------------------------------------------------
+--
+--  Author: Alexey Melnichuk <alexeymelnichuck@gmail.com>
+--
+--  Copyright (C) 2013-2016 Alexey Melnichuk <alexeymelnichuck@gmail.com>
+--
+--  Licensed according to the included 'LICENCE' document
+--
+--  This file is part of lua-path library.
+--
+------------------------------------------------------------------
+
 --[[ note GetTempPath
 GetTempPath() might ignore the environment variables it's supposed to use (TEMP, TMP, ...) if they are more than 130 characters or so.
 http://blogs.msdn.com/b/larryosterman/archive/2010/10/19/because-if-you-do_2c00_-stuff-doesn_2700_t-work-the-way-you-intended_2e00_.aspx
@@ -575,12 +587,36 @@ end
 function _M.dir(u, P)
   local h, fd = u.FindFirstFile(P .. u.DIR_SEP .. u.ANY_MASK)
   if not h then
-    local nop = function()end
-    if (fd == CONST.ERROR_FILE_NOT_FOUND) or (fd == CONST.ERROR_PATH_NOT_FOUND) then
-      -- this is not error but just empty result
-      return nop, {close = nop}
+    local closed = false
+
+    local function close()
+      if not closed then
+        closed = true
+        return
+      end
+      error("calling 'next' on bad self (closed directory)", 2)
     end
-    return function() return nil, fd end, {close = nop}
+    local next
+    if (fd == CONST.ERROR_FILE_NOT_FOUND) or (fd == CONST.ERROR_PATH_NOT_FOUND) then
+      next = function()
+        if closed then
+          error("calling 'next' on bad self (closed directory)", 2)
+        end
+        close()
+      end
+    else
+      next = function()
+        if closed then
+          error("calling 'next' on bad self (closed directory)", 2)
+        end
+        close()
+        return nil, fd
+      end
+    end
+
+    local obj = { close = close; next = next}
+
+    return obj.next, obj
   end
 
   local closed = false
