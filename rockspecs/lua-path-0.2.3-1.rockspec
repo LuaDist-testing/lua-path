@@ -1,17 +1,9 @@
--- This file was automatically generated for the LuaDist project.
-
 package = "lua-path"
-version = "0.2.2-1"
--- LuaDist source
+version = "0.2.3-1"
 source = {
-  tag = "0.2.2-1",
-  url = "git://github.com/LuaDist-testing/lua-path.git"
+  url = "https://github.com/moteus/lua-path/archive/v0.2.3.zip",
+  dir = "lua-path-0.2.3",
 }
--- Original source
--- source = {
---   url = "https://github.com/moteus/lua-path/archive/v0.2.2.zip",
---   dir = "lua-path-0.2.2",
--- }
 
 description = {
   summary = "File system path manipulation library",
@@ -22,7 +14,7 @@ description = {
 }
 
 dependencies = {
-  "lua >= 5.1, < 5.3",
+  "lua >= 5.1, < 5.4",
   -- "luafilesystem >= 1.4",
   -- "alien >= 0.7.0",       -- instead lfs on windows
 }
@@ -51,5 +43,4 @@ build = {
     ["path.win32.wcs"         ] = "lua/path/win32/wcs.lua",
   }
 }
-
 
