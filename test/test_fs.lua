@@ -381,6 +381,15 @@ function test_dir()
   assert_equal(#t, n)
 end
 
+function test_dir_not_existing_path()
+  local path = J(base, _T"some", _T"nonexists", _T"path")
+  if IS_WINDOWS then
+    assert_pass(function() fs.dir(path) end)
+  else
+    skip("LuaFileSystem generate error")
+  end
+end
+
 function test_each()
   local t = clone(files)
   table.insert(t, J(base, _T"1"))

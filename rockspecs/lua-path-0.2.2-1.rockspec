@@ -1,17 +1,9 @@
--- This file was automatically generated for the LuaDist project.
-
 package = "lua-path"
-version = "0.2.1-1"
--- LuaDist source
+version = "0.2.2-1"
 source = {
-  tag = "0.2.1-1",
-  url = "git://github.com/LuaDist-testing/lua-path.git"
+  url = "https://github.com/moteus/lua-path/archive/v0.2.2.zip",
+  dir = "lua-path-0.2.2",
 }
--- Original source
--- source = {
---   url = "https://github.com/moteus/lua-path/archive/v0.2.1.zip",
---   dir = "lua-path-0.2.1",
--- }
 
 description = {
   summary = "File system path manipulation library",
@@ -51,5 +43,6 @@ build = {
     ["path.win32.wcs"         ] = "lua/path/win32/wcs.lua",
   }
 }
+
 
 

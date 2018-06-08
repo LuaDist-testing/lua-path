@@ -480,7 +480,7 @@ function _M.isfile(u, P)
     return nil, err
   end
   if TestBit(fd.dwFileAttributes, CONST.FILE_ATTRIBUTE_REPARSE_POINT) then return false end
-  return (not islink) and (not TestBit(fd.dwFileAttributes, CONST.FILE_ATTRIBUTE_DIRECTORY)) and P
+  return (not TestBit(fd.dwFileAttributes, CONST.FILE_ATTRIBUTE_DIRECTORY)) and P
 end
 
 function _M.islink(u, P)
@@ -537,7 +537,15 @@ end
 
 function _M.dir(u, P)
   local h, fd = u.FindFirstFile(P .. u.DIR_SEP .. u.ANY_MASK)
-  assert(h, fd)
+  if not h then
+    local nop = function()end
+    if (fd == CONST.ERROR_FILE_NOT_FOUND) or (fd == CONST.ERROR_PATH_NOT_FOUND) then
+      -- this is not error but just empty result
+      return nop, {close = nop}
+    end
+    return function() return nil, fd end, {close = nop}
+  end
+
   local closed = false
   local obj = {
     close = function(self)
@@ -582,7 +590,13 @@ end
 
 local function findfile(u, P, cb)
   local h, fd = u.FindFirstFile(P)
-  if not h then return nil, fd end
+  if not h then
+    if (fd == CONST.ERROR_FILE_NOT_FOUND) or (fd == CONST.ERROR_PATH_NOT_FOUND) then
+      -- this is not error but just empty result
+      return
+    end
+    return nil, fd
+  end
   repeat
     local ret = cb(fd)
     if ret then
@@ -639,7 +653,7 @@ foreach_impl = function (u, base, mask, callback, option)
     end;
   end
 
-  local ok, ret = findfile(u, path .. mask, function(fd)
+  local ok, err = findfile(u, path .. mask, function(fd)
     local isdir = TestBit(fd.dwFileAttributes, CONST.FILE_ATTRIBUTE_DIRECTORY)
     if isdir then if option.skipdirs then return end
     else if option.skipfiles then return end end
