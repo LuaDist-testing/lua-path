@@ -1,0 +1,253 @@
+---
+-- @module path
+--
+-- @usage
+-- local PATH = require "path"
+--
+-- -- suppose we run on windows
+-- assert(PATH.IS_WINDOWS)
+--
+-- -- we can use system dependet function
+-- print(PATH.user_home())  -- C:\Documents and Settings\Admin
+-- print(PATH.currentdir()) -- C:\lua\5.1
+--
+-- -- but we can use specific system path notation
+-- local ftp_path = PATH.new('/')
+-- print(ftp_path.join("/root", "some", "dir")) -- /root/some/dir
+--
+-- -- All functions specific to system will fail
+-- assert(not pcall( function() ftp_path.currentdir() end) )
+
+local path = {}
+
+--- ???
+--
+path.DIR_SEP    = DIR_SEP
+
+--- ???
+--
+path.IS_WINDOWS = IS_WINDOWS
+
+--
+-- PATH manipulation 
+
+---
+-- @local
+function path.unquote(P)end
+
+--- ???
+-- @local
+function path.quote(P)end
+
+--- ???
+--
+function path.has_dir_end(P)end
+
+--- ???
+--
+function path.remove_dir_end(P)end
+
+--- ???
+--
+function path.ensure_dir_end(P)end
+
+--- ???
+-- @local
+function path.normolize_sep(P) end
+
+--- ???
+--
+function path.normolize(P) end
+
+--- ???
+--
+function path.join(...)end
+
+--- ???
+--
+function path.splitext(P) end
+
+--- ???
+--
+function path.splitpath(P)end
+
+--- ???
+--
+function path.splitroot(P)end
+
+--- ???
+--
+function path.basename(P)end
+
+--- ???
+--
+function path.dirname(P)end
+
+--- ???
+--
+function path.extension(P)end
+
+--- ???
+--
+function path.root(P)end
+
+--- ???
+--
+function path.isfullpath(P)end
+
+
+--
+-- FS manipulation
+
+--- return user_home dir
+--
+function path.user_home()end
+
+--- Return file attributes.
+--
+-- On Windows it is result of GetFileAttributesEx
+-- <br/>depends on `path.fs`
+function path.flags(P)end
+
+--- Return path to temp directory.
+-- On Windows can use GetTempPath if Alien/FFI/afx have been found
+-- On Windows use TMP/TEMP environment variables
+-- <br/>depends on `path.fs`
+function path.tmpdir() end
+
+--- Return full path for temp file.
+-- <br/>depends on `path.fs`
+function path.tmpname()end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.size(P)end
+
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.fullpath(P)end
+
+--- ???
+-- @local
+-- <br/>depends on `path.fs`
+function path.attrib(P, ...)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.exists(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.isdir(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.isfile(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.islink(P)end
+
+--- Return true if directory is empty
+-- <br/>depends on `path.fs`
+function path.isempty(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.ctime(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.mtime(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.atime(P)end
+
+--- ???
+-- <br/>depends on `path.fs` and LuaDate
+function path.cdate(P)end
+
+--- ???
+-- <br/>depends on `path.fs` and LuaDate
+function path.mdate(P)end
+
+--- ???
+-- <br/>depends on `path.fs` and LuaDate
+function path.adate(P)end
+
+--- Create new directory.
+-- <br/>depends on `path.fs`
+function path.mkdir(P)end
+
+--- Remove empty directory.
+-- <br/>depends on `path.fs`
+function path.rmdir(P)end
+
+--- Remove empty directory or file.
+-- @tparam string P 
+-- @tparam ?remove_opt opt
+-- <br/>depends on `path.fs`
+function path.remove(P, opt)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.rename(from,to,force)end
+
+--- ???
+-- @tparam string from
+-- @tparam string to
+-- @tparam ?copy_opt|boolean opt
+-- <br/>depends on `path.fs`
+function path.copy(from,to,opt)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.currentdir()end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.chdir(P)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.each(str_file, str_params, func_callback, tbl_option)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.each(str_file, str_params, tbl_option)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.each(str_file, func_callback, tbl_option)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.each(str_file, tbl_option)end
+
+--- ???
+-- <br/>depends on `path.fs`
+function path.each(func_callback, tbl_option)end
+
+--- ???
+--
+-- @table copy_opt
+-- @tfield[opt=false] boolean delay    
+-- @tfield[opt=false] boolean recurse  
+-- @tfield[opt=false] boolean skipdirs 
+-- @tfield[opt=false] boolean skipfiles
+-- @tfield[opt=function(src,dst) return true end] callable accept
+-- @tfield[opt=function(err, src, dst) return true end] callable error 
+-- @see path.fs.each_options
+
+--- ???
+--
+-- @table remove_opt
+-- @tfield[opt=true] boolean delay    
+-- @tfield[opt=false] boolean recurse  
+-- @tfield[opt=false] boolean skipdirs 
+-- @tfield[opt=false] boolean skipfiles
+-- @tfield[opt=function(src,dst) return true end] callable accept
+-- @tfield[opt=function(err, src, dst) return true end] callable error 
+-- @see path.fs.each_options
