@@ -42,9 +42,9 @@ local _ENV = TEST_CASE('PATH manipulation') if true then
 local function testpath(pth,p1,p2,p3)
   local dir,rest = path.splitpath(pth)
   local name,ext = path.splitext(rest)
-  assert_equal(dir,p1)
-  assert_equal(name,p2)
-  assert_equal(ext,p3)
+  assert_equal(p1, dir )
+  assert_equal(p2, name)
+  assert_equal(p3, ext )
 end
 
 function test_penlight_1()
@@ -99,10 +99,40 @@ function test_split()
 end
 
 function test_splitext()
-  testpath ('.log','','','.log')
+  testpath ('.log','','.log','')
+  testpath ('path/.log','path','.log','')
   testpath ('log','','log','')
   testpath ('.log/','.log','','')
   testpath ('.1001.log','','.1001','.log')
+  
+  local root, ext = path.splitext(".log")
+  assert_equal(".log", root)
+  assert_equal("", ext)
+  assert_equal(ext, path.extension(".log"))
+
+  root, ext = path.splitext("test/.log")
+  assert_equal("test/.log", root)
+  assert_equal("", ext)
+  assert_equal(ext, path.extension("test/.log"))
+
+  root, ext = path.splitext("test/1.log")
+  assert_equal("test/1", root)
+  assert_equal(".log", ext)
+  assert_equal(ext, path.extension("test/1.log"))
+
+  root, ext = path.splitext("test/.1.log")
+  assert_equal("test/.1", root)
+  assert_equal(".log", ext)
+  assert_equal(ext, path.extension("test/.1.log"))
+end
+
+function test_splitdrive()
+  local a, b
+  a,b = path_unx:splitdrive('/root/etc')
+  assert_equal('', a) assert_equal('/root/etc', b)
+
+  a,b = path_win:splitdrive('c:\\root\\etc')
+  assert_equal('c:', a) assert_equal('root\\etc', b)
 end
 
 function test_norm()
@@ -157,6 +187,13 @@ function test_dir_end()
   assert_equal('.',               path_unx:remove_dir_end('./'))
   assert_equal('/',               path_unx:ensure_dir_end(''))
   assert_equal('/',               path_unx:ensure_dir_end('/'))
+end
+
+function test_join()
+  assert_equal("hello",                       path_win:join("hello"))
+  assert_equal("hello\\world",                path_win:join("hello", "", "world"))
+  assert_equal("c:\\world\\some\\path",       path_win:join("hello", "", "c:\\world", "some", "path"))
+  assert_equal("hello\\",                     path_win:join("hello", ""))
 end
 
 end

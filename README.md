@@ -1,5 +1,8 @@
 [![Build Status](https://travis-ci.org/moteus/lua-path.png?branch=master)](https://travis-ci.org/moteus/lua-path)
 
+###Documentation
+[Dcumentation](http://moteus.github.io/path/index.html)
+
 Usage:
 ```lua
 local PATH = require "path"
@@ -36,3 +39,7 @@ end,{
   reverse = true; -- subdirs at first 
 })
 ```
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-path/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+

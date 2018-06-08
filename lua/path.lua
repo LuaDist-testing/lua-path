@@ -62,7 +62,7 @@ function PATH:normolize(P)
     local n P,n = string.gsub(P, DIR_SEP .. '%.' .. DIR_SEP, DIR_SEP)
     if n == 0 then break end
   end
-  while true do -- `/` => `/`
+  while true do -- `//` => `/`
     local n P,n = string.gsub(P, DIR_SEP .. DIR_SEP, DIR_SEP)
     if n == 0 then break end
   end
@@ -118,12 +118,18 @@ end
 function PATH:join(...)
   local t,n = {...}, select('#', ...)
   local r = t[1]
-  for i = 2, #t do r = self:join_(r,t[i]) end
+  for i = 2, #t do
+    if self:isfullpath(t[i]) then
+      r = t[i]
+    else
+      r = self:join_(r,t[i])
+    end
+  end
   return r
 end
 
 function PATH:splitext(P)
-  local s1,s2 = string.match(P,"(.-)([.][^\\/.]*)$")
+  local s1,s2 = string.match(P,"(.-[^\\/.])(%.[^\\/.]*)$")
   if s1 then return s1,s2 end
   return P, ''
 end
@@ -147,6 +153,13 @@ function PATH:splitroot(P)
     end
     return '', P
   end
+end
+
+function PATH:splitdrive(P)
+  if self.IS_WINDOWS then
+    return self:splitroot(P)
+  end
+  return '', P
 end
 
 function PATH:basename(P)
@@ -184,17 +197,7 @@ local function prequire(m)
   return err
 end
 
-local fs 
-
-if not fs and IS_WINDOWS then
-  local fsload = require"path.win32.fs".load
-  local ok, mod = pcall(fsload, "ffi", "A") or pcall(fsload, "alien", "A")
-  fs = ok and mod
-end
-
-if not fs then
-  fs = prequire"path.lfs.fs"
-end
+local fs = prequire "path.fs"
 
 if fs then
 
@@ -487,6 +490,17 @@ function PATH:remove(P, opt)
 end
 
 end -- fs 
+
+do -- Python aliases
+PATH.split    = PATH.splitext
+PATH.isabs    = PATH.isfullpath
+PATH.normpath = PATH.normolize
+PATH.abspath  = PATH.fullpath
+PATH.getctime = PATH.ctime
+PATH.getatime = PATH.atime
+PATH.getmtime = PATH.mtime
+PATH.getsize  = PATH.size
+end
 
 local function make_module()
   local M = require "path.module"

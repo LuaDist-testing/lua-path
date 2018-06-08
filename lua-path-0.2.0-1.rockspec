@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-path"
-version = "0.1.1-1"
+version = "0.2.0-1"
 -- LuaDist source
 source = {
-  tag = "0.1.1-1",
+  tag = "0.2.0-1",
   url = "git://github.com/LuaDist-testing/lua-path.git"
 }
 -- Original source
 -- source = {
---   url = "https://github.com/moteus/lua-path/archive/v0.1.1.zip",
---   dir = "lua-path-0.1.1",
+--   url = "https://github.com/moteus/lua-path/archive/v0.2.0.zip",
+--   dir = "lua-path-0.2.0",
 -- }
 
 description = {
@@ -34,6 +34,7 @@ build = {
   },
   modules = {
     ["path"                   ] = "lua/path.lua",
+    ["path.fs"                ] = "lua/path/fs.lua",
     ["path.findfile"          ] = "lua/path/findfile.lua",
     ["path.lfs.fs"            ] = "lua/path/lfs/fs.lua",
     ["path.module"            ] = "lua/path/module.lua",
