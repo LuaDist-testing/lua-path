@@ -1086,6 +1086,17 @@ if IS_WINDOWS then
     fs  = require"path.win32.fs".load("ffi", "W")
     CREATE_TEST("ffiW")
   end
+else
+
+  if not prequire"path.syscall.fs" then 
+    local _ENV = TEST_CASE("syscall.fs")
+    test = SKIP_CASE"syscall module not found"
+  else
+    _T, _t = pass_thrue,pass_thrue
+    fs = require"path.syscall.fs"
+    CREATE_TEST("syscall.fs")
+  end
+
 end
 
 end
