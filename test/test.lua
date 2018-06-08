@@ -1,6 +1,5 @@
 local lunit = require "lunit"
-local tutil = require "utils"
-local TEST_CASE, skip = tutil.TEST_CASE, tutil.skip
+local TEST_CASE = lunit.TEST_CASE
 
 local path  = require "path"
 
@@ -38,7 +37,7 @@ local function clone(t, o)
   return o
 end
 
-local _ENV = TEST_CASE('PATH manipulation') do
+local _ENV = TEST_CASE('PATH manipulation') if true then
 
 local function testpath(pth,p1,p2,p3)
   local dir,rest = path.splitpath(pth)
@@ -110,11 +109,23 @@ function test_norm()
   assert_equal("..\\hello",       path_win:normolize("..\\hello"))
   assert_equal("..\\hello",       path_win:normolize("..\\hello\\world\\.."))
   assert_equal("c:\\hello",       path_win:normolize("c:\\..\\hello"))
+  assert_equal("c:\\hello",       path_win:normolize("c:\\hello\\."))
+  assert_equal("c:\\hello",       path_win:normolize("c:\\hello\\.\\."))
   assert_equal("\\hello",         path_win:normolize("\\..\\hello")) -- full path without drive
   assert_equal("\\\\host\\hello", path_win:normolize("\\\\host\\..\\hello"))
   
   assert_equal("/hello",          path_unx:normolize("\\c\\..\\hello"))
   assert_equal("../hello",        path_unx:normolize("..\\hello\\world\\.."))
+  assert_equal("/home/test",      path_unx:normolize("/home/test/."))
+  assert_equal("/home/test",      path_unx:normolize("/home/test/./."))
+  assert_equal("/home/test/world",path_unx:normolize("/home/test/./world"))
+  assert_equal("/home/test",      path_unx:normolize("\\home\\test\\."))
+  assert_equal("/",               path_unx:normolize("/"))
+  assert_equal("/",               path_unx:normolize("/."))
+  assert_equal("/",               path_unx:normolize("/./."))
+  assert_equal("/",               path_unx:normolize("/./"))
+  assert_equal(".",               path_unx:normolize("././"))
+  assert_equal("/dev",            path_unx:normolize("/./dev"))
 end
 
 function test_quote()
@@ -135,9 +146,22 @@ function test_quote()
   assert_equal('/hello world', path_unx:unquote('"/hello world"'))
 end
 
+function test_dir_end()
+  assert_equal('c:',              path_win:remove_dir_end('c:\\'))
+  assert_equal('c:',              path_win:remove_dir_end('c:\\\\'))
+  assert_equal('c:\\.',           path_win:remove_dir_end('c:\\.\\'))
+  assert_equal('c:\\',            path_win:ensure_dir_end('c:'))
+
+  assert_equal('',                path_unx:remove_dir_end('/'))
+  assert_equal('',                path_unx:remove_dir_end('//'))
+  assert_equal('.',               path_unx:remove_dir_end('./'))
+  assert_equal('/',               path_unx:ensure_dir_end(''))
+  assert_equal('/',               path_unx:ensure_dir_end('/'))
 end
 
-local _ENV = TEST_CASE('PATH system error') do
+end
+
+local _ENV = TEST_CASE('PATH system error') if true then
 
 function test()
   local path = path.IS_WINDOWS and path_unx or path_win
@@ -147,7 +171,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH fullpath') do
+local _ENV = TEST_CASE('PATH fullpath')     if true then
 
 function test_user_home()
   local p = assert_string(path.user_home())
@@ -166,7 +190,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH make dir') do
+local _ENV = TEST_CASE('PATH make dir')     if true then
 
 local cwd
 
@@ -182,10 +206,18 @@ function setup()
   teardown()
 end
 
+function test_mkdir_nested()
+  local DST = path.join(cwd, '1', '2', '3')
+  assert_equal(cwd, path.isdir(cwd))
+  assert_string(path.mkdir(DST))
+  assert_true  (path.rmdir(DST))
+end
+
 function test_mkdir()
-  assert(path.isdir(cwd))
-  assert(path.mkdir(path.join(cwd, '1', '2', '3')))
-  assert(path.rmdir(path.join(cwd, '1', '2', '3')))
+  local DST = path.join(cwd, '1')
+  assert_equal(cwd, path.isdir(cwd))
+  assert_string(path.mkdir(DST))
+  assert_true  (path.rmdir(DST))
 end
 
 function test_clean()
@@ -199,7 +231,9 @@ function test_clean()
   assert_false( path.exists(path.join(cwd, '1', '2', '3')) )
 end
 
-local _ENV = TEST_CASE('PATH findfile')
+end
+
+local _ENV = TEST_CASE('PATH findfile')     if true then
 
 local cwd, files, dirs
 
@@ -303,10 +337,11 @@ function test_findfile()
   assert_nil(next(params))
 
   params = clone(dirs)
-  path.each("./*", "fz", function(f, sz)
+  path.each("./*", "fzm", function(f, sz, m)
     f = up(f)
     assert_not_nil(params[f], "unexpected: " .. f)
-    assert_equal(0, sz)
+    assert_equal('directory', m)
+    if path.IS_WINDOWS then assert_equal(0, sz) end
     params[f] = nil
   end, {skipfiles=true, recurse=true})
   assert_nil(next(params))
@@ -335,7 +370,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH rename') do
+local _ENV = TEST_CASE('PATH rename')       if true then
 
 local cwd
 
@@ -415,7 +450,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH chdir') do
+local _ENV = TEST_CASE('PATH chdir')        if true then
 
 local cwd
 
@@ -441,7 +476,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH copy') do
+local _ENV = TEST_CASE('PATH copy')         if true then
 
 local cwd, files
 
@@ -583,6 +618,7 @@ function test_copy_accept()
 end
 
 function test_copy_error_skip()
+  local ivalid_path = path.IS_WINDOWS and path.join(cwd, '1*') or "/dev/qaz"
   local options options = {
     error = function(err, src, des, opt)
       local key = src:upper()
@@ -594,17 +630,18 @@ function test_copy_error_skip()
   }
   assert(path.copy(
     path.join(cwd, '1', '*'),
-    path.join(cwd, '1*'),
+    ivalid_path,
     options
   ))
   assert_nil(next(files))
 end
 
 function test_copy_error_break()
+  local ivalid_path = path.IS_WINDOWS and path.join(cwd, '1*') or "/dev/qaz"
   local flag = false
   assert(path.copy(
     path.join(cwd, '1', '*'),
-    path.join(cwd, '1*'),{
+    ivalid_path,{
     error = function()
       assert_false(flag)
       flag = true
@@ -617,7 +654,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH clean dir') do
+local _ENV = TEST_CASE('PATH clean dir')    if true then
 
 local cwd
 
@@ -735,7 +772,7 @@ end
 
 end
 
-local _ENV = TEST_CASE('PATH each mask') do
+local _ENV = TEST_CASE('PATH each mask')    if true then
 
 local cwd, J
 

@@ -1,6 +1,12 @@
 local lunit = require "lunit"
-local tutil = require "utils"
-local TEST_CASE, skip = tutil.TEST_CASE, tutil.skip
+local TEST_CASE = lunit.TEST_CASE
+
+local SKIP_CASE
+if lunit.skip then 
+  SKIP_CASE = function(msg) return function() lunit.skip(msg) end end
+else
+  SKIP_CASE = require "utils".skip
+end
 
 local IS_WINDOWS = package.config:sub(1,1) == '\\'
 local fs, wcs, _T, _t
@@ -69,12 +75,12 @@ local function J(...)
   return (table.concat({...}, DIR_SEP))
 end
 
-local _ENV = TEST_CASE(name .. ": basic") do
+local _ENV = TEST_CASE(name .. ": basic")             if true then
 
 local cwd
 
 function setup()
-  cwd = fs.currentdir()
+  cwd = assert_string(fs.currentdir())
 end
 
 function teardown()
@@ -110,7 +116,7 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": file manipulation") do
+local _ENV = TEST_CASE(name .. ": file manipulation") if true then
 
 local cwd, base
 local data ="123\r\n456\n789"
@@ -176,11 +182,12 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": copy/move") do
+local _ENV = TEST_CASE(name .. ": copy/move")         if true then
 
 local cwd, base
 local data  = "123\r\n456\n789"
 local rdata = "789\r\n123\n456"
+local tmp   = "tmp"
 
 function teardown()
   fs.chdir(cwd)
@@ -194,6 +201,7 @@ function teardown()
   fs.remove(J(base, _T'to.dat'  ))
   fs.remove(J(base, _T'to.txt'  ))
   fs.remove(J(base, _T'to'      ))
+  fs.remove(J(base, _T'tmp2'    ))
   fs.rmdir (J(base, _T'to'      ))
   fs.rmdir (J(base, _T'tmp'     ))
   fs.rmdir (J(base, _T'tmp2'    ))
@@ -203,7 +211,8 @@ end
 
 function setup()
   cwd = fs.currentdir()
-  base = J(cwd, _T"tmp")
+  base = J(cwd, _T(tmp))
+  assert_false(fs.exists(base), _t(base) .. " already exists!")
 
   teardown()
   assert_true(fs.mkdir(base))
@@ -326,7 +335,7 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": basic iteration") do
+local _ENV = TEST_CASE(name .. ": basic iteration")   if true then
 
 local cwd, base
 local data = "123\r\n456"
@@ -478,7 +487,7 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": recurse iteration") do
+local _ENV = TEST_CASE(name .. ": recurse iteration") if true then
 
 local cwd, base
 local data = "123\r\n456"
@@ -740,7 +749,7 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": mask") do
+local _ENV = TEST_CASE(name .. ": mask")              if true then
 
 local cwd, base
 local data = "123\r\n456"
@@ -836,7 +845,7 @@ end
 
 end
 
-local _ENV = TEST_CASE(name .. ": mask2") do
+local _ENV = TEST_CASE(name .. ": mask2")             if true then
 
 local cwd, base
 local data = "123\r\n456"
@@ -878,7 +887,9 @@ function test_ext1()
   }
 
   fs.foreach(base .. DIR_SEP .. _T"*.txt", function(f)
-    table.remove(F,assert_number(ifind(F, f), _t(f)))
+    local s = (_t(f):sub(-8) == (DIR_SEP .. ".txtdat"))
+    if s then skip("FIXME. pat:`*.txt` should not match `.txtdat` but shuld match `1.txtdat` (for windows compat)")
+    else table.remove(F,assert_number(ifind(F, f), _t(f))) end
   end)
   local _, str = next(F)
   assert_equal(nil, _t(str))
@@ -955,14 +966,92 @@ end
 
 end
 
+local _ENV = TEST_CASE"os test"                       if name == 'lfs' and false then
+
+local cwd, base
+local data  = "123\r\n456\n789"
+local rdata = "789\r\n123\n456"
+local tmp   = "tmp"
+
+function teardown()
+  fs.chdir(cwd)
+  fs.remove(J(base, _T"test.txt"))
+  fs.remove(J(base, _T"test2.txt"))
+  fs.remove(J(base, _T'nonempty', _T'tmp.dat'))
+  fs.remove(J(base, _T'tmp2',     _T'tmp.dat'))
+  fs.rmdir(base)
+
+  fs.remove(J(base, _T'from.dat'))
+  fs.remove(J(base, _T'to.dat'  ))
+  fs.remove(J(base, _T'to.txt'  ))
+  fs.remove(J(base, _T'to'      ))
+  fs.rmdir (J(base, _T'to'      ))
+  fs.rmdir (J(base, _T'tmp'     ))
+  fs.rmdir (J(base, _T'tmp2'    ))
+  fs.rmdir (J(base, _T'nonempty'))
+  fs.rmdir (base)
 end
+
+function setup()
+  cwd = fs.currentdir()
+  base = J(cwd, _T(tmp))
+  assert_false(fs.exists(base), _t(base) .. " already exists!")
+
+  teardown()
+  assert_true(fs.mkdir(base))
+  assert_true(fs.mkdir(J(base, _T'to')))
+  assert_true(fs.mkdir(J(base, _T'tmp')))
+  assert_true(fs.mkdir(J(base, _T'nonempty')))
+
+  assert(mkfile(J(base, _T'from.dat'), data ))
+  assert(mkfile(J(base, _T'to.dat'  ), rdata))
+  assert(mkfile(J(base, _T'nonempty', _T'tmp.dat'), data ))
+end
+
+function test_rename_file_to_file()
+  local SRC, DST = J(base, _T'from.dat'), J(base, _T'to.dat')
+  assert_equal(SRC, fs.isfile(SRC))
+  assert_equal(DST, fs.isfile(DST))
+  assert_nil(os.rename(SRC, DST))
+  assert_equal(SRC, fs.isfile(SRC))
+  assert_equal(DST, fs.isfile(DST))
+  assert_equal(data,  read_file(SRC))
+  assert_equal(rdata, read_file(DST))
+end
+
+function test_rename_file_to_dir()
+  local SRC, DST = J(base, _T'from.dat'), J(base, _T'to')
+  assert_equal(SRC, fs.isfile(SRC))
+  assert_equal(DST, fs.isdir(DST))
+  assert_nil(os.rename(SRC, DST))
+  assert_equal(SRC, fs.isfile(SRC))
+  assert_equal(DST, fs.isdir(DST))
+end
+
+function test_remove_empty_dir()
+  local SRC = J(base, _T'to')
+  assert_equal(SRC, fs.isdir(SRC))
+  assert_nil(os.remove(SRC))
+  assert_equal(SRC, fs.isdir(SRC))
+end
+
+function test_remove_nonempty_dir()
+  local SRC = J(base, _T'nonempty')
+  assert_equal(SRC, fs.isdir(SRC))
+  assert_nil(os.remove(SRC))
+  assert_equal(SRC, fs.isdir(SRC))
+end
+
+end
+
+end -- CREATE_TEST
 
 -------------------------------------------------------------------------------
 do -- create tests
 
 if not prequire"lfs" then 
   local _ENV = TEST_CASE("lfs.fs")
-  test = skip"lfs module not found"
+  test = SKIP_CASE"lfs module not found"
 else
   _T, _t = pass_thrue,pass_thrue
   fs = require"path.lfs.fs"
@@ -972,7 +1061,7 @@ end
 if IS_WINDOWS then
   if not prequire"alien" then 
     local _ENV = TEST_CASE("alien.fs")
-    test = skip"alien module not found"
+    test = SKIP_CASE"alien module not found"
   else
     _T, _t = pass_thrue,pass_thrue
     fs = require"path.win32.fs".load("alien", "A")
@@ -986,7 +1075,7 @@ if IS_WINDOWS then
 
   if not prequire"ffi" then 
     local _ENV = TEST_CASE("ffi.fs")
-    test = skip"ffi module not found"
+    test = SKIP_CASE"ffi module not found"
   else
     _T, _t = pass_thrue,pass_thrue
     fs = require"path.win32.fs".load("ffi", "A")

@@ -1,6 +1,12 @@
 local lunit = require "lunit"
-local tutil = require "utils"
-local TEST_CASE, skip = tutil.TEST_CASE, tutil.skip
+local TEST_CASE = lunit.TEST_CASE
+
+local SKIP_CASE
+if lunit.skip then 
+  SKIP_CASE = function(msg) return function() lunit.skip(msg) end end
+else
+  SKIP_CASE = require "utils".skip
+end
 
 local path = require "path"
 local ISW  = path.IS_WINDOWS
@@ -145,10 +151,11 @@ function test_findfile()
   assert_nil(next(params))
 
   params = clone(dirs)
-  path_each("./*", "fz", function(f, sz)
+  path_each("./*", "fzm", function(f, sz, m)
     f = up(f)
     assert_not_nil(params[f], "unexpected: " .. f)
-    assert_equal(0, sz)
+    if ISW then assert_equal(0, sz) end
+    assert_equal('directory', m)
     params[f] = nil
   end, {skipfiles=true, recurse=true})
   assert_nil(next(params))
@@ -178,15 +185,15 @@ end
 end
 
 local _ENV = TEST_CASE('each lfs')
-if not prequire"lfs" then test = skip"lfs module not found" else
+if not prequire"lfs" then test = SKIP_CASE"lfs module not found" else
   make_test(_M or _ENV, {
     get_findfile = function() return require "path.lfs.fs".each_impl end;
   })
 end
 
 local _ENV = TEST_CASE('each ffi')
-if not ISW then test = skip"ffi support only on Windwos" 
-elseif not prequire"ffi" then test = skip"ffi module not found" else
+if not ISW then test = SKIP_CASE"ffi support only on Windwos" 
+elseif not prequire"ffi" then test = SKIP_CASE"ffi module not found" else
   make_test(_M or _ENV, {
     get_findfile = function() 
       return require "path.win32.fs".load("ffi", "A").each_impl
@@ -195,8 +202,8 @@ elseif not prequire"ffi" then test = skip"ffi module not found" else
 end
 
 local _ENV = TEST_CASE('each alien')
-if not ISW then test = skip"alien support only on Windwos" 
-elseif not prequire"alien" then test = skip"alien module not found" else
+if not ISW then test = SKIP_CASE"alien support only on Windwos" 
+elseif not prequire"alien" then test = SKIP_CASE"alien module not found" else
   make_test(_M or _ENV, {
     get_findfile = function() 
       return require "path.win32.fs".load("alien", "A").each_impl
